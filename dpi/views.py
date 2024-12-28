@@ -44,7 +44,7 @@ class CreateHospitalView(APIView):
             data = request.data
             name = data.get('name')
             address = data.get('address')
-            admin = Administrative.objects.get(id=request.user.actor_id)
+            admin = Administrator.objects.get(id=data["user"]["actor_id"])
 
             # Validate the required fields
             if not name or not address:
