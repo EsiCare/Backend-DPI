@@ -621,8 +621,8 @@ class UpdateWorkerView(APIView):
 class DeleteWorkerView(APIView):
     def delete(self, request):
         data = request.data
-        role = data.get('role')
-        worker_id = data.get('id')
+        role = request.query_params.get('role') 
+        worker_id = request.query_params.get('id') 
 
         if not role or not worker_id:
             return Response({'status': 'error', 'message': 'Role and worker ID are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -634,6 +634,8 @@ class DeleteWorkerView(APIView):
             'radiologist': Radiologist,
             'laborantin': Laborantin,
         }
+
+
 
         worker_model = worker_roles.get(role)
         if not worker_model:
