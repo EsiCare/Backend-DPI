@@ -44,6 +44,7 @@ class CreateHospitalView(APIView):
             data = request.data
             name = data.get('name')
             address = data.get('address')
+            admin = Administrator.objects.get(id=data["user"]["actor_id"])
 
             # Validate the required fields
             if not name or not address:
@@ -65,7 +66,8 @@ class CreateHospitalView(APIView):
 
             hospital = Hospital.objects.create(
                 name=name,
-                address=address
+                address=address,
+                admin=admin
             )
 
             return Response({
@@ -208,7 +210,7 @@ class RegisterWorkerView(APIView):
 
         if UserCredentials.objects.filter(email=email).exists():
             return Response({'status': 'error', 'message': 'Email already in use'}, status=status.HTTP_400_BAD_REQUEST)
-
+        
         try:
             # Fetch hospital if provided
             if hospital_name:
@@ -220,14 +222,13 @@ class RegisterWorkerView(APIView):
                 hospital = None
             # Prepare common worker data
             worker_data = {
-                'name': data.get('name'),
-                'phoneNumber': data.get('phoneNumber'),
-                'SSN': data.get('SSN'),
-                'email': email,
-                'hospital': hospital  
-
+            'name': data.get('name'),
+            'phoneNumber': data.get('phoneNumber'),
+            'SSN': data.get('SSN'),
+            'email': email,
             }
-
+            if role != "admin":
+                worker_data['hospital'] = hospital
             # Handle doctor-specific field
             if role == 'doctor':
                 specialty = data.get('specialty')
@@ -323,6 +324,7 @@ class LoginView(APIView):
             if not check_password(password, user_credentials.password):
                 return Response({'status': 'error', 'message': 'Invalid email or password'}, status=status.HTTP_400_BAD_REQUEST)
 
+
             # Identify the actor's role
             actor = user_credentials.actor
             if isinstance(actor, Patient):
@@ -339,6 +341,35 @@ class LoginView(APIView):
                 role = 'laborantin'
             elif isinstance(actor, Administrator):
                 role = 'admin'
+                # Get admin's hospitals
+                hospitals = Hospital.objects.filter(admin=actor)
+                first_hospital = hospitals.first()
+                # Generate JWT tokens
+                refresh = RefreshToken.for_user(user_credentials)
+                refresh['role'] = role  # Add role to the token
+                refresh['actor_id'] = actor.id  # Add actor ID to the token
+                hospital_data = {
+                    'id': first_hospital.id,
+                    'name': first_hospital.name,
+                    'counts': {
+                        'doctors': first_hospital.doctor_count,
+                        'nurses': first_hospital.nurse_count,
+                        'administr': first_hospital.administrative_count,
+                    }
+                } if first_hospital else None
+                
+                return Response({
+                    'status': 'success',
+                    'data': {
+                        'token': str(refresh.access_token),
+                        'refresh': str(refresh),
+                        'role': 'administrative',
+                        'actor_id': actor.id,
+                        'hospitals': [{'id': h.id, 'name': h.name} for h in hospitals],
+                        'default_hospital': hospital_data
+                    }
+                })
+
             else:
                 role = 'unknown'
 
@@ -346,7 +377,8 @@ class LoginView(APIView):
             refresh = RefreshToken.for_user(user_credentials)
             refresh['role'] = role  # Add role to the token
             refresh['actor_id'] = actor.id  # Add actor ID to the token
-
+            
+            
             return Response({
                 'status': 'success',
                 'message': 'Login successful',
@@ -589,8 +621,8 @@ class UpdateWorkerView(APIView):
 class DeleteWorkerView(APIView):
     def delete(self, request):
         data = request.data
-        role = data.get('role')
-        worker_id = data.get('id')
+        role = request.query_params.get('role') 
+        worker_id = request.query_params.get('id') 
 
         if not role or not worker_id:
             return Response({'status': 'error', 'message': 'Role and worker ID are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -602,6 +634,8 @@ class DeleteWorkerView(APIView):
             'radiologist': Radiologist,
             'laborantin': Laborantin,
         }
+
+
 
         worker_model = worker_roles.get(role)
         if not worker_model:
