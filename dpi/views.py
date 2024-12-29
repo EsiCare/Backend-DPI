@@ -17,15 +17,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Patient,UserCredentials,Dpi,Nurse,Administrative,Doctor,Radiologist,Laborantin,Hospital,Administrator
-from .serializers   import PatientSerializer,DoctorSerializer,RadiologistSerializer,NurseSerializer,AdministrativeSerializer,LaborantinSerializer,HospitalSerializer
+from .models import Patient,UserCredentials,Nurse,Administrative,Doctor,Radiologist,Laborantin,Hospital
+from .serializers   import PatientSerializer,DoctorSerializer,RadiologistSerializer,NurseSerializer,AdministrativeSerializer,LaborantinSerializer
 from django.contrib.contenttypes.models import ContentType
 from .backends import generate_password , send_password_email
-from rest_framework.pagination import PageNumberPagination
-from django.db.models import Count
-from django.db.models.functions import TruncDate
-from datetime import datetime, timedelta
-from django.db.models import Q
+
+
 
 
 
@@ -44,30 +41,21 @@ class CreateHospitalView(APIView):
             data = request.data
             name = data.get('name')
             address = data.get('address')
-            admin = Administrator.objects.get(id=data["user"]["actor_id"])
 
             # Validate the required fields
             if not name or not address:
                 return Response({'status': 'error', 'message': 'Name and address are required'},
                                 status=status.HTTP_400_BAD_REQUEST)
 
-
             # Check if a hospital with the same name 
             if Hospital.objects.filter(name=name).exists():
                 return Response({'status': 'error', 'message': 'A hospital with this name already exists'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            
-            # Check if a hospital with the same address 
-            if Hospital.objects.filter(address=address).exists():
-                return Response({'status': 'error', 'message': 'A hospital with this address already exists'},
-                                status=status.HTTP_400_BAD_REQUEST)
-
 
 
             hospital = Hospital.objects.create(
                 name=name,
-                address=address,
-                admin=admin
+                address=address
             )
 
             return Response({
@@ -110,7 +98,7 @@ class RegisterPatientView(APIView):
                 return Response({'status': 'error', 'message': 'Invalid email format'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Generate password
-            password = "1111" #generate_password()
+            password = generate_password()
             # Hash the password
             hashed_password = make_password(password)
 
@@ -147,12 +135,11 @@ class RegisterPatientView(APIView):
                 password=hashed_password
             )
 
-            dpi = Dpi.objects.create(patient=patient)
+            
 
             # Send email
             try:
-                pass
-                # send_password_email(email, password)
+                send_password_email(email, password)
             except Exception as e:
                 return JsonResponse({'status': 'error', 'message': f'Failed to send email: {str(e)}'}, status=500)
 
@@ -168,7 +155,6 @@ class RegisterPatientView(APIView):
                     'id': patient.id,
                     'name': patient.name,
                     'email': email,
-                    'dpi_id': dpi.id,
                     'hospital_id':hospital.id,
                 },
                 'tokens': {
@@ -202,33 +188,36 @@ class RegisterWorkerView(APIView):
             'administrative': Administrative,
             'radiologist': Radiologist,
             'laborantin': Laborantin,
-            'admin':Administrator
         }
         worker_model = worker_roles.get(role)
+
         if not worker_model:
             return Response({'status': 'error', 'message': 'Invalid role'}, status=status.HTTP_400_BAD_REQUEST)
 
         if UserCredentials.objects.filter(email=email).exists():
             return Response({'status': 'error', 'message': 'Email already in use'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
+
             # Fetch hospital if provided
             if hospital_name:
                 try:
                     hospital = Hospital.objects.get(name=hospital_name)
                 except Hospital.DoesNotExist:
                     return Response({'status': 'error', 'message': 'Hospital not found'}, status=status.HTTP_400_BAD_REQUEST)
+
             else:
                 hospital = None
             # Prepare common worker data
             worker_data = {
-            'name': data.get('name'),
-            'phoneNumber': data.get('phoneNumber'),
-            'SSN': data.get('SSN'),
-            'email': email,
+                'name': data.get('name'),
+                'phoneNumber': data.get('phoneNumber'),
+                'SSN': data.get('SSN'),
+                'email': email,
+                'hospital': hospital  
+
             }
-            if role != "admin":
-                worker_data['hospital'] = hospital
+
             # Handle doctor-specific field
             if role == 'doctor':
                 specialty = data.get('specialty')
@@ -249,11 +238,10 @@ class RegisterWorkerView(APIView):
                 hospital.radiologist_count += 1
             elif role == 'laborantin':
                 hospital.laborantin_count += 1
-            if hospital: 
-                hospital.save()
+            hospital.save()
 
             # Generate password
-            password = "1111" #generate_password()
+            password = generate_password()
             hashed_password = make_password(password)
             credentials = UserCredentials.objects.create(
                 content_type=ContentType.objects.get_for_model(worker_model),
@@ -262,20 +250,15 @@ class RegisterWorkerView(APIView):
                 password=hashed_password,
             )
             
-            
-
             # Send email
             try:
-                pass
-                # send_password_email(email, password)
+                send_password_email(email, password)
             except Exception as e:
                 return JsonResponse({'status': 'error', 'message': f'Failed to send email: {str(e)}'}, status=500)
             
             # Generate JWT tokens
             refresh = RefreshToken.for_user(credentials)
             access_token = str(refresh.access_token)
-
-
 
             # Return success response
             return Response({
@@ -306,16 +289,13 @@ class RegisterWorkerView(APIView):
 
 class LoginView(APIView):
     def post(self, request):
-        
-        
         try:
             data = request.data
             email = data.get('email')
             password = data.get('password')
-            
+
             if not email or not password:
                 return Response({'status': 'error', 'message': 'Email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
-
 
             try:
                 user_credentials = UserCredentials.objects.get(email=email)
@@ -325,7 +305,6 @@ class LoginView(APIView):
             # Check the password
             if not check_password(password, user_credentials.password):
                 return Response({'status': 'error', 'message': 'Invalid email or password'}, status=status.HTTP_400_BAD_REQUEST)
-
 
             # Identify the actor's role
             actor = user_credentials.actor
@@ -341,42 +320,6 @@ class LoginView(APIView):
                 role = 'radiologist'
             elif isinstance(actor, Laborantin):
                 role = 'laborantin'
-            elif isinstance(actor, Administrator):
-                role = 'admin'
-                # Get admin's hospitals
-                hospitals = Hospital.objects.filter(admin=actor)
-                first_hospital = hospitals.first()
-                # Generate JWT tokens
-                refresh = RefreshToken.for_user(user_credentials)
-                refresh['role'] = role  # Add role to the token
-                refresh['actor_id'] = actor.id  # Add actor ID to the token
-                hospital_data = {
-                    'id': first_hospital.id,
-                    'name': first_hospital.name,
-                    'counts': {
-                        'doctors': first_hospital.doctor_count,
-                        'nurses': first_hospital.nurse_count,
-                        'administr': first_hospital.administrative_count,
-                    }
-                } if first_hospital else None
-                
-
-                return Response({
-                    'status': 'success',
-                        'token': str(refresh.access_token),
-                        'refresh': str(refresh),
-                        'role': 'admin',
-                        'actor_id': actor.id,
-                        'hospitals': [{'id': h.id, 'name': h.name} for h in hospitals],
-                        'default_hospital': hospital_data,
-                        "gender": actor.gender,
-                        "name": actor.name,
-                        "phoneNumber": actor.phoneNumber,
-                        "SSN": actor.SSN,
-                        "dateAdded": actor.dateAdded,
-                        "email": actor.email,                        
-                })
-
             else:
                 role = 'unknown'
 
@@ -384,29 +327,17 @@ class LoginView(APIView):
             refresh = RefreshToken.for_user(user_credentials)
             refresh['role'] = role  # Add role to the token
             refresh['actor_id'] = actor.id  # Add actor ID to the token
-            
 
-    
-            
             return Response({
                 'status': 'success',
                 'message': 'Login successful',
                 'refresh': str(refresh),
-                'token': str(refresh.access_token),
+                'access': str(refresh.access_token),
                 'role': role,
-                'actor_id': actor.id,
-                'name' : actor.name,
-                "gender": actor.gender,
-                "name": actor.name,
-                "phoneNumber": actor.phoneNumber,
-                "SSN": actor.SSN,
-                "dateAdded": actor.dateAdded,
-                "email": actor.email,
-                
+                'actor_id': actor.id
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            
             return Response({'status': 'error', 'message': f'An error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get(self, request):
@@ -416,12 +347,9 @@ class LoginView(APIView):
 
 
 
-
-
-class PatientListView(APIView, PageNumberPagination):
-    page_size = 10  # Default number of items per page
-
+class PatientListView(APIView):
     def get(self, request):
+        # Get the hospital name from query parameters
         hospital_name = request.query_params.get('hospital')
 
         if not hospital_name:
@@ -434,11 +362,8 @@ class PatientListView(APIView, PageNumberPagination):
 
         patients = Patient.objects.filter(hospital=hospital)
 
-        # Paginate the patients
-        paginated_patients = self.paginate_queryset(patients, request, view=self)
-        serializer = PatientSerializer(paginated_patients, many=True)
-
-        return self.get_paginated_response({'status': 'success', 'data': serializer.data})
+        serializer = PatientSerializer(patients, many=True)
+        return Response({'status': 'success', 'data': serializer.data}, status=status.HTTP_200_OK)
 
 
 
@@ -457,7 +382,7 @@ class PatientDetailView(APIView):
 
 
 
-class SearchPatient_by_SSN (APIView):
+class Search_by_SSN (APIView):
     def get(self,request,SSN):
         try : 
             patient = Patient.objects.get(SSN=SSN)
@@ -490,22 +415,7 @@ class Edit_patient_info (APIView):
 
 
 
-
 class GetAllWorkersView(APIView):
-    class CustomPagination(PageNumberPagination):
-        page_size = 10  # Default number of items per page
-        page_size_query_param = 'page_size'  # Allow client to set page size
-        max_page_size = 50  # Maximum page size
-    
-    def get_paginated_response(self, queryset, serializer_class, request):
-        paginator = self.CustomPagination()
-        page = paginator.paginate_queryset(queryset, request)
-        if page is not None:
-            serializer = serializer_class(page, many=True)
-            return paginator.get_paginated_response(serializer.data)
-        serializer = serializer_class(queryset, many=True)
-        return Response(serializer.data)
-
     def get(self, request):
         # Get the hospital name from the query parameters
         hospital_name = request.query_params.get('hospital', None)
@@ -518,41 +428,30 @@ class GetAllWorkersView(APIView):
         except Hospital.DoesNotExist:
             return Response({'status': 'error', 'message': 'Hospital not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Paginate workers based on the hospital
-        doctor_data = self.get_paginated_response(
-            Doctor.objects.filter(hospital=hospital),
-            DoctorSerializer,
-            request
-        )
-        nurse_data = self.get_paginated_response(
-            Nurse.objects.filter(hospital=hospital),
-            NurseSerializer,
-            request
-        )
-        radiologist_data = self.get_paginated_response(
-            Radiologist.objects.filter(hospital=hospital),
-            RadiologistSerializer,
-            request
-        )
-        administrative_data = self.get_paginated_response(
-            Administrative.objects.filter(hospital=hospital),
-            AdministrativeSerializer,
-            request
-        )
+        # Filter workers based on the hospital
+        doctors = Doctor.objects.filter(hospital=hospital)
+        nurses = Nurse.objects.filter(hospital=hospital)
+        radiologists = Radiologist.objects.filter(hospital=hospital)
+        administrative_workers = Administrative.objects.filter(hospital=hospital)
 
-        # Combine the paginated data into one response
+        # Serialize the data for each worker type
+        doctor_serializer = DoctorSerializer(doctors, many=True)
+        nurse_serializer = NurseSerializer(nurses, many=True)
+        radiologist_serializer = RadiologistSerializer(radiologists, many=True)
+        administrative_serializer = AdministrativeSerializer(administrative_workers, many=True)
+
+        # Combine the serialized data into one response
         combined_data = {
-            'doctors': doctor_data.data,
-            'nurses': nurse_data.data,
-            'radiologists': radiologist_data.data,
-            'administrative': administrative_data.data,
+            'doctors': doctor_serializer.data,
+            'nurses': nurse_serializer.data,
+            'radiologists': radiologist_serializer.data,
+            'administrative': administrative_serializer.data,
         }
 
         return Response({
             'status': 'success',
             'data': combined_data
         }, status=status.HTTP_200_OK)
-
 
 
 
@@ -638,8 +537,8 @@ class UpdateWorkerView(APIView):
 class DeleteWorkerView(APIView):
     def delete(self, request):
         data = request.data
-        role = request.query_params.get('role') 
-        worker_id = request.query_params.get('id') 
+        role = data.get('role')
+        worker_id = data.get('id')
 
         if not role or not worker_id:
             return Response({'status': 'error', 'message': 'Role and worker ID are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -651,8 +550,6 @@ class DeleteWorkerView(APIView):
             'radiologist': Radiologist,
             'laborantin': Laborantin,
         }
-
-
 
         worker_model = worker_roles.get(role)
         if not worker_model:
@@ -702,105 +599,3 @@ class DeleteWorkerView(APIView):
 
         except Exception as e:
             return Response({'status': 'error', 'message': f'Error deleting {role}: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
-class HospitalListView(APIView):
-    def get(self, request):
-        hospitals = Hospital.objects.all()
-        serializer = HospitalSerializer(hospitals, many=True)
-        return Response({
-            'status': 'success',
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)
-    
-
-
-
-
-
-
-
-class PatientGraphDataView(APIView):
-    def get(self, request):
-        hospital_name = request.query_params.get('hospital')
-
-        if not hospital_name:
-            return Response({'status': 'error', 'message': 'Hospital name is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            hospital = Hospital.objects.get(name=hospital_name)
-        except Hospital.DoesNotExist:
-            return Response({'status': 'error', 'message': 'Hospital not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        # Get the current date and calculate the date range for the past week
-        today = datetime.today().date()
-        start_of_week = today - timedelta(days=today.weekday())  # Start of the current week (Monday)
-        end_of_week = start_of_week + timedelta(days=6)  # End of the week (Sunday)
-
-        # Group by dateAdded (truncated to date) and count the patients
-        patient_counts = Patient.objects.filter(
-            hospital=hospital,
-            dateAdded__date__gte=start_of_week,
-            dateAdded__date__lte=end_of_week
-        ).annotate(date_only=TruncDate('dateAdded')).values('date_only').annotate(patient_count=Count('id')).order_by('date_only')
-
-        # Format the data for the graph (7 days)
-        data_for_graph = []
-        current_day = start_of_week
-
-        # Fill in the data for each day of the week, even if no patients were added that day
-        for i in range(7):
-            day_data = next((item for item in patient_counts if item['date_only'] == current_day), None)
-            if day_data:
-                data_for_graph.append(day_data['patient_count'])
-            else:
-                data_for_graph.append(0)  # No new patients that day
-            current_day += timedelta(days=1)
-        return Response({
-            'status': 'success',
-            'data': {
-                'graph_data': {
-                    'start_day': start_of_week.strftime('%Y-%m-%d'),  # Format start date for the graph
-                    'data': data_for_graph  # 7-day patient count data
-                }
-            }
-        }, status=status.HTTP_200_OK)
-
-
-
-
-
-class SearchWorkerView(APIView):
-    def get(self, request):
-        # Get the search query from the request parameters
-        query = request.query_params.get('name', None)
-        
-        if not query:
-            return Response({'status': 'error', 'message': 'Name query parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Perform a case-insensitive search across different worker models
-        doctors = Doctor.objects.filter(Q(name__icontains=query))
-        nurses = Nurse.objects.filter(Q(name__icontains=query))
-        radiologists = Radiologist.objects.filter(Q(name__icontains=query))
-        administrative_workers = Administrative.objects.filter(Q(name__icontains=query))
-        
-        # Serialize the results
-        doctor_serializer = DoctorSerializer(doctors, many=True)
-        nurse_serializer = NurseSerializer(nurses, many=True)
-        radiologist_serializer = RadiologistSerializer(radiologists, many=True)
-        administrative_serializer = AdministrativeSerializer(administrative_workers, many=True)
-        
-        # Combine results
-        combined_data = {
-            'doctors': doctor_serializer.data,
-            'nurses': nurse_serializer.data,
-            'radiologists': radiologist_serializer.data,
-            'administrative': administrative_serializer.data,
-        }
-        
-        return Response({
-            'status': 'success',
-            'data': combined_data
-        }, status=status.HTTP_200_OK)

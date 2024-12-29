@@ -5,14 +5,26 @@ from django.contrib.contenttypes.models import ContentType
 
 # Create your models here.
 
+class Hospital(models.Model):
+    name= models.CharField(max_length=50,unique=True)
+    address= models.CharField(max_length=100,unique=True)
+    created = models.DateTimeField(auto_now_add=True,null=True)
+    # Counter fields for workers
+    doctor_count = models.IntegerField(default=0)
+    nurse_count = models.IntegerField(default=0)
+    administrative_count = models.IntegerField(default=0)
+    radiologist_count = models.IntegerField(default=0)
+    laborantin_count = models.IntegerField(default=0)
+    def __str__(self):
+        return self.name   
+
 
 class Actor(models.Model):
     name = models.CharField(max_length=50)
     phoneNumber =  models.CharField(max_length=10)                   # blank=True, null=True
-    SSN = models.CharField(max_length=50 , unique=True,null=False)
+    SSN = models.CharField(max_length=50 , unique=True)
     dateAdded = models.DateTimeField(auto_now_add=True,null=True)
     email = models.CharField(max_length=50, unique=True,null=True)
-    gender = models.CharField(max_length=8, unique=False,null=False,default="Male")
 
     def __str__(self):
         return self.name	
@@ -21,24 +33,6 @@ class Actor(models.Model):
         ordering = ['-dateAdded']
         abstract = True  # This makes it an abstract model
 
-
-class  Administrator (Actor):
-    pass
-
-
-class Hospital(models.Model):
-    name= models.CharField(max_length=50,unique=True)
-    address= models.CharField(max_length=100,unique=True)
-    created = models.DateTimeField(auto_now_add=True,null=True)
-    admin = models.ForeignKey(Administrator, on_delete=models.SET_NULL, null=True, related_name='managed_hospitals')
-    # Counter fields for workers
-    doctor_count = models.IntegerField(default=0)
-    nurse_count = models.IntegerField(default=0)
-    administrative_count = models.IntegerField(default=0)
-    radiologist_count = models.IntegerField(default=0)
-    laborantin_count = models.IntegerField(default=0)
-    def __str__(self):
-        return self.name  
 
 class Doctor(Actor):
     specialty = models.CharField(max_length=100) 
@@ -51,7 +45,8 @@ class Doctor(Actor):
 
 
 class Patient(Actor):
-    address =models.CharField(max_length=200, null=False,default="paitent adress")
+    address =models.CharField(max_length=200,null=True)
+    gender=models.CharField(max_length=10)
     dateOfBirth = models.DateField(null=True)
     emergencyContactName = models.CharField(max_length=50, null=True)
     emergencyContactPhone= models.CharField(max_length=10, null=True)
@@ -71,7 +66,6 @@ class Patient(Actor):
             )
         return None
     
-
 
 class  Administrative (Actor):
     hospital = models.ForeignKey(
@@ -108,6 +102,7 @@ class  Laborantin (Actor):
     )
 
 
+
 class UserCredentials(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
@@ -121,64 +116,3 @@ class UserCredentials(models.Model):
 
 
 
-class Dpi (models.Model):
-    createdAt = models.DateTimeField(auto_now_add=True,null=True)
-    patient = models.OneToOneField(Patient, on_delete=models.CASCADE)
-    def __str__(self):
-        return f"DPI of {self.patient.user.username}"
-    
-
-class prescription (models.Model):
-    issueDate = models.CharField(max_length=10)
-    validationDate=models.CharField(max_length=10)
-    dpi = models.ForeignKey(Dpi, on_delete=models.CASCADE)
-    def __str__(self):
-        return f"Prescription for {self.dpi.patient.user.username}"
-
-
-class Care (models.Model):
-    observation = models.CharField(max_length=500)
-    dpi = models.ForeignKey(Dpi, on_delete=models.CASCADE)
-    def __str__(self):
-        return f"Prescription for {self.dpi.patient.user.username}"
-
-
-
-class   MedicalCondition (models.Model):
-    date=models.CharField(max_length=10)
-    type= models.CharField(max_length=100)
-    dpi = models.ForeignKey(Dpi, on_delete=models.CASCADE)
-    def __str__(self):
-        return f"Condition for {self.dpi.patient.user.username}"
-
-
-
-# Test model (now with type differentiation)
-class Test(models.Model):
-    TEST_TYPES = (
-        ('bloodwork', 'Bloodwork'),
-        ('scan', 'Scan'),
-    )
-    type = models.CharField(max_length=50, choices=TEST_TYPES)
-    issueDate = models.DateField()
-    conductionDate = models.DateField()
-    status = models.CharField(max_length=10)
-    dpi = models.ForeignKey(Dpi, on_delete=models.CASCADE)
-    created = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.get_type_display()} test for {self.dpi.patient.user.username}"
-
-
-
-# Bloodwork model (if still needed)
-class Bloodwork(models.Model):
-    test = models.OneToOneField(Test, on_delete=models.CASCADE, related_name="bloodwork")
-    results = models.TextField()
-
-
-# Scan model (if still needed)
-class Scan(models.Model):
-    test = models.OneToOneField(Test, on_delete=models.CASCADE, related_name="scan")
-    image = models.ImageField(upload_to='examinations/', blank=True, null=True)
-    
