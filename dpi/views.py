@@ -17,7 +17,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Patient,UserCredentials,Dpi,Nurse,Administrative,Doctor,Radiologist,Laborantin,Hospital,Administrator
+from .models import Patient,UserCredentials,Nurse,Administrative,Doctor,Radiologist,Laborantin,Hospital,Administrator
 from .serializers   import PatientSerializer,DoctorSerializer,RadiologistSerializer,NurseSerializer,AdministrativeSerializer,LaborantinSerializer,HospitalSerializer
 from django.contrib.contenttypes.models import ContentType
 from .backends import generate_password , send_password_email
