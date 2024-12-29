@@ -12,6 +12,7 @@ class Actor(models.Model):
     SSN = models.CharField(max_length=50 , unique=True,null=False)
     dateAdded = models.DateTimeField(auto_now_add=True,null=True)
     email = models.CharField(max_length=50, unique=True,null=True)
+    gender = models.CharField(max_length=8, unique=False,null=False,default="Male")
 
     def __str__(self):
         return self.name	
@@ -51,7 +52,6 @@ class Doctor(Actor):
 
 class Patient(Actor):
     address =models.CharField(max_length=200, null=False,default="paitent adress")
-    gender=models.CharField(max_length=10)
     dateOfBirth = models.DateField(null=True)
     emergencyContactName = models.CharField(max_length=50, null=True)
     emergencyContactPhone= models.CharField(max_length=10, null=True)
@@ -71,6 +71,7 @@ class Patient(Actor):
             )
         return None
     
+
 
 class  Administrative (Actor):
     hospital = models.ForeignKey(
