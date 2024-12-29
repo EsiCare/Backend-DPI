@@ -360,6 +360,7 @@ class LoginView(APIView):
                     }
                 } if first_hospital else None
                 
+
                 return Response({
                     'status': 'success',
                     'data': {
@@ -369,8 +370,7 @@ class LoginView(APIView):
                         'actor_id': actor.id,
                         'hospitals': [{'id': h.id, 'name': h.name} for h in hospitals],
                         'default_hospital': hospital_data,
-                        'name' : actor.name,
-                        # "gender": actor.gender,
+                        "gender": actor.gender,
                         "name": actor.name,
                         "phoneNumber": actor.phoneNumber,
                         "SSN": actor.SSN,

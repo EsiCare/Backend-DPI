@@ -72,6 +72,7 @@ class Patient(Actor):
         return None
     
 
+
 class  Administrative (Actor):
     hospital = models.ForeignKey(
         Hospital,
