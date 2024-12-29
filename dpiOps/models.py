@@ -38,10 +38,18 @@ class Test(models.Model):
         ('pending', 'Pending'),
         ('completed', 'Completed')
     )
+    TEST_PRORITE = (
+        ('normal','Normal'),
+        ('dangerous','Dangerous')
+    )
     issueDate = models.DateField(auto_now_add=True)
-    conductionDate = models.DateField(blank=True)
+    conductionDate = models.DateField(null=True,blank=True)
     status = models.CharField(max_length=10, choices = TEST_STATUS)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    resume = models.TextField(null=True, blank=True)
+    description=models.TextField(null=True)
+    title=models.CharField(max_length=50,null=True)
+    priorite= models.CharField(max_length=10, choices = TEST_PRORITE,null=True)
     def __str__(self):
         return f"{self.get_type_display()} test for {self.patient.user.username}"
     
@@ -52,12 +60,15 @@ class Test(models.Model):
 
 
 # Bloodwork model (if still needed)
-class Bloodwork(Test):
+class Baio_test(Test):
     medicalCondition = models.ForeignKey(MedicalCondition, on_delete=models.CASCADE, related_name="bloodworks")
-    results = models.TextField()
+    mesurements =  models.JSONField(default=dict)
+    #laborantin=models.ForeignKey(Laborantin, on_delete=models.CASCADE)
 
 
 # Scan model (if still needed)
-class Scan(Test):
+class Radio_test(Test):
     medicalCondition = models.ForeignKey(MedicalCondition, on_delete=models.CASCADE, related_name="tests")
-    image = models.ImageField(upload_to='examinations/', blank=True, null=True)
+    #radiologist=models.ForeignKey(Radiologist, on_delete=models.CASCADE)
+    results = models.JSONField(null=True, blank=True)  
+   
