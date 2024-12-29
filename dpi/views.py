@@ -365,7 +365,7 @@ class LoginView(APIView):
                     'status': 'success',
                         'token': str(refresh.access_token),
                         'refresh': str(refresh),
-                        'role': 'administrative',
+                        'role': 'admin',
                         'actor_id': actor.id,
                         'hospitals': [{'id': h.id, 'name': h.name} for h in hospitals],
                         'default_hospital': hospital_data,
