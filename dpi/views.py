@@ -306,6 +306,8 @@ class RegisterWorkerView(APIView):
 
 class LoginView(APIView):
     def post(self, request):
+        
+        
         try:
             data = request.data
             email = data.get('email')
@@ -366,7 +368,14 @@ class LoginView(APIView):
                         'role': 'administrative',
                         'actor_id': actor.id,
                         'hospitals': [{'id': h.id, 'name': h.name} for h in hospitals],
-                        'default_hospital': hospital_data
+                        'default_hospital': hospital_data,
+                        'name' : actor.name,
+                        # "gender": actor.gender,
+                        "name": actor.name,
+                        "phoneNumber": actor.phoneNumber,
+                        "SSN": actor.SSN,
+                        "dateAdded": actor.dateAdded,
+                        "email": actor.email,                        
                     }
                 })
 
@@ -378,6 +387,8 @@ class LoginView(APIView):
             refresh['role'] = role  # Add role to the token
             refresh['actor_id'] = actor.id  # Add actor ID to the token
             
+
+    
             
             return Response({
                 'status': 'success',
@@ -385,7 +396,16 @@ class LoginView(APIView):
                 'refresh': str(refresh),
                 'token': str(refresh.access_token),
                 'actor-type': role,
-                'actor_id': actor.id
+                'actor_id': actor.id,
+                'name' : actor.name,
+                "gender": actor.gender,
+                "name": actor.name,
+                "phoneNumber": actor.phoneNumber,
+                "SSN": actor.SSN,
+                "dateAdded": actor.dateAdded,
+                "email": actor.email,
+
+                
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
