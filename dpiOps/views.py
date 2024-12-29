@@ -1,9 +1,12 @@
 import json
+from django.db import transaction
 from django.shortcuts import render
+from requests import Response
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from datetime import datetime
+from asgiref.sync import sync_to_async
 
 from .models import *
 from dpi.models import *
@@ -124,7 +127,7 @@ def edit_medical_condition_page(request, pk):
 
     
 @api_view(['POST'])
-def add_medical_care(request, condition_pk):
+def request_medical_care(request, condition_pk):
     auth_response = authenticate(request=request)
 
     if auth_response:
@@ -135,23 +138,20 @@ def add_medical_care(request, condition_pk):
         medicalCondition = MedicalCondition.objects.get(pk=condition_pk)
 
         medicalCare = {}
-        if ('care' not in request.data) and ('observation' not in request.data):
+        if ('description' not in request.data):
             return JsonResponse({
                 "status": "failure",
-                "message": "please provide the medical care done on the patient or an observation"
+                "message": "please provide the medical care requesting to be done on the patient"
             },status=404)
 
-        if 'care' in request.data:
-            medicalCare["care"] = request.data['care']
-        if 'observation' in request.data:
-            medicalCare["observation"] = request.data['observation']
-        if 'date' in request.data:
-            medicalCare["date"] = request.data['care']
-        else:
-            medicalCare["date"]= datetime.now()
+        medicalCare["description"] = request.data['description']
+        if 'title' in request.data:
+            medicalCare["title"] = request.data['title']
+        if 'priority' in request.data:
+            medicalCare["priority"] = request.data['priority']
 
         medicalCare["patient"] = medicalCondition.patient
-        medicalCare["nurse"] = Nurse.objects.get(pk=request.user["id"])
+        medicalCare["nurse"] = None
         medicalCare["medicalCondition"] = medicalCondition
 
         careQuery = Care.objects.create(**medicalCare)
@@ -163,8 +163,6 @@ def add_medical_care(request, condition_pk):
             "data": serializedData
         },status = 200)
 
-
-        
 
     except MedicalCondition.DoesNotExist:
         # Return failure response if object doesn't exist
@@ -179,15 +177,201 @@ def add_medical_care(request, condition_pk):
             ) 
     
 
+@api_view(['GET'])
+def view_medical_cares(request, SSN):
+    try:
+        patient = Patient.objects.get(SSN=SSN)
+
+        caresQuery = Care.objects.filter(patient=patient)
+
+        if "status" in request.GET:
+            caresQuery = caresQuery.filter(status = request.GET.get("status"))
+
+        cares = MedCareSerializer(caresQuery, many=True).data
+
+        return JsonResponse({
+            "status": "success",
+            "data": cares
+        },status=200)
+        
+    except Patient.DoesNotExist:
+        return JsonResponse({
+            "status": "fail",
+            "message": "patient does not exist"
+        }, status=404)
+    except Exception as e:
+        return JsonResponse(
+            {'status': 'error', 'message': f'An error occurred: {str(e)}'},
+            status =500
+            ) 
+
+@api_view(['POST'])
+def complete_medical_care(request, pk):
+    auth_response = authenticate(request=request)
+
+    if auth_response:
+        return auth_response
+    
+    try:
+        care = Care.objects.get(pk=pk)
+        
+        if "resume" in request.data:
+            care.observation = request.data["resume"]
+
+        care.status = "Completed"
+
+        if "dateCompleted" in request.data:
+            care.dateCompleted = request.data["dateCompleted"]
+        else:
+            care.dateCompleted = datetime.now()
+
+        care.nurse = Nurse.objects.get(pk=request.user["id"])
+        
+        care.save()
+        data = MedCareSerializer(care).data
+
+        return JsonResponse({
+            "status": "success",
+            "data": data
+        },status=200)
+
+    except Care.DoesNotExist:
+        return JsonResponse({
+            "status": "fail",
+            "message": "medical care request does not exist"
+        }, status=404)
+    except Exception as e:
+        return JsonResponse(
+            {'status': 'error', 'message': f'An error occurred: {str(e)}'},
+            status =500
+            ) 
 
 
+@api_view(['POST'])
+def issue_prescription(request, condition_pk):
+    auth_response = authenticate(request=request)
 
+    if auth_response:
+        return auth_response
+    
+    try:
+        with transaction.atomic():  # Start a database transaction
+            # Retrieve the patient and medical condition
+            medical_condition = MedicalCondition.objects.get(pk=condition_pk)
+            patient = medical_condition.patient
+            doctor = Doctor.objects.get(pk=request.user["id"])  # Assuming user is a doctor
 
+            # Extract prescription data
+            prescription_data = {
+                "notes": request.data.get("notes", ""),
+                "patient": patient,
+                "doctor": doctor,
+                "medicalCondition": medical_condition,
+            }
 
+            # Create the prescription
+            prescription = Prescription.objects.create(**prescription_data)
 
+            # Validate and add prescription entries
+            entries = request.data.get("entries", [])
+            if not entries:
+                raise ValueError("At least one prescription entry is required.")
 
+            for entry in entries:
+                required_fields = ["name", "dosage", "frequency", "duration", "instructions"]
+                missing_fields = [field for field in required_fields if not entry.get(field)]
 
+                if missing_fields:
+                    raise ValueError(f"Missing fields in entry: {', '.join(missing_fields)}")
 
+                PrescriptionEntry.objects.create(
+                    name=entry["name"],
+                    dosage=entry["dosage"],
+                    frequency=entry["frequency"],
+                    duration=entry["duration"],
+                    instructions=entry["instructions"],
+                    prescription=prescription,
+                )
+            
+
+            return JsonResponse({
+                "status": "success",
+                "message": "Prescription added successfully",
+                "prescription": {
+                    "id": prescription.id,
+                    "issueDate": prescription.issueDate,
+                    "validationDate": prescription.validationDate,
+                    "status": prescription.status,
+                    "notes": prescription.notes,
+                    "entries": [
+                        {
+                            "name": entry["name"],
+                            "dosage": entry["dosage"],
+                            "frequency": entry["frequency"],
+                            "duration": entry["duration"],
+                            "instructions": entry["instructions"],
+                        } for entry in entries
+                    ]
+                }
+            }, status=201)
+
+    except Patient.DoesNotExist:
+        return JsonResponse({
+            "status": "failure",
+            "message": "Patient not found"
+        }, status=404)
+
+    except MedicalCondition.DoesNotExist:
+        return JsonResponse({
+            "status": "failure",
+            "message": "Medical condition not found"
+        }, status=404)
+
+    except Doctor.DoesNotExist:
+        return JsonResponse({
+            "status": "failure",
+            "message": "Doctor not found"
+        }, status=404)
+
+    except ValueError as e:
+        return JsonResponse({
+            "status": "failure",
+            "message": str(e)
+        }, status=400)
+
+    except Exception as e:
+        return JsonResponse({
+            "status": "error",
+            "message": f"An unexpected error occurred: {str(e)}"
+        }, status=500)
+
+@api_view(['GET'])
+def view_prescriptions(request, condition_pk):
+    try:
+        # Retrieve the medical condition
+        medical_condition = MedicalCondition.objects.get(pk=condition_pk)
+
+        # Fetch prescriptions for the medical condition
+        prescriptions = medical_condition.prescriptions.prefetch_related('entries').all()
+
+        # Serialize the prescriptions
+        serializer = PrescriptionSerializer(prescriptions, many=True)
+
+        return JsonResponse({
+            "status": "success",
+            "data": serializer.data
+        }, status=200)
+
+    except MedicalCondition.DoesNotExist:
+        return JsonResponse({
+            "status": "failure",
+            "message": "Medical condition not found"
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            "status": "error",
+            "message": f"An unexpected error occurred: {str(e)}"
+        }, status=500)
 
 
 @api_view(['GET'])

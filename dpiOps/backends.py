@@ -1,10 +1,14 @@
+from datetime import time
 import jwt
 from django.conf import settings
 from django.http import JsonResponse
-
+import asyncio
+import aiohttp
+from django.http import JsonResponse
 
 from dpi.models import *
 from dpi.serializers import *
+from .models import *
 
 # def authenticate(request):
 #     user = {}
@@ -63,3 +67,26 @@ def authenticate(request):
         return JsonResponse({"error": "Authorization header not found"}, status=401)
 
     return None
+
+
+# Asynchronous function to send HTTP request
+async def validate_prescription(prescription_id):
+    async with aiohttp.ClientSession() as session:
+        await asyncio.sleep(15)
+        try:
+            async with session.post('https://localhost:5000/api/validate') as response:
+                if response.status == 200:
+                    json_response = await response.json()
+                    if json_response.get("result") == "true":
+                        # Update prescription status to 'validated'
+                        prescription = await Prescription.objects.aget(id=prescription_id)
+                        prescription.status = "validated"
+                        await prescription.asave()
+                    else:
+                        # Update prescription status to 'failed'
+                        prescription = await Prescription.objects.aget(id=prescription_id)
+                        prescription.status = "failed"
+                        await prescription.asave()
+            print(f"{prescription.__str__()} status changed to {prescription.status}")
+        except Exception as e:
+            print(f"Error while sending prescription to external server: {e}")
