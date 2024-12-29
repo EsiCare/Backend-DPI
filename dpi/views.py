@@ -363,7 +363,6 @@ class LoginView(APIView):
 
                 return Response({
                     'status': 'success',
-                    'data': {
                         'token': str(refresh.access_token),
                         'refresh': str(refresh),
                         'role': 'administrative',
@@ -376,7 +375,6 @@ class LoginView(APIView):
                         "SSN": actor.SSN,
                         "dateAdded": actor.dateAdded,
                         "email": actor.email,                        
-                    }
                 })
 
             else:
@@ -395,7 +393,7 @@ class LoginView(APIView):
                 'message': 'Login successful',
                 'refresh': str(refresh),
                 'token': str(refresh.access_token),
-                'actor-type': role,
+                'role': role,
                 'actor_id': actor.id,
                 'name' : actor.name,
                 "gender": actor.gender,
@@ -404,7 +402,6 @@ class LoginView(APIView):
                 "SSN": actor.SSN,
                 "dateAdded": actor.dateAdded,
                 "email": actor.email,
-
                 
             }, status=status.HTTP_200_OK)
 
