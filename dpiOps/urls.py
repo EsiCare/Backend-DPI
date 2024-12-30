@@ -1,3 +1,4 @@
+
 from django.urls import path
 from .views import *
 
@@ -6,9 +7,17 @@ urlpatterns = [
     path("api/medicalHistory/add/<int:patient_pk>", add_medical_condition, name="add_medical_condition"),
     path("api/medicalHistory/edit/<int:pk>", edit_medical_condition_page, name="edit_medical_condition_page"),
     # path("api/medicalConditions/<int:pk>")
-    path("api/medicalCares/add/<int:condition_pk>",add_medical_care, name="add_medical_care"),
+
+    path("api/medicalCares/add/<int:condition_pk>",request_medical_care, name="add_medical_care"),
+    path("api/medicalCares/<int:SSN>", view_medical_cares, name="view_medical_cares"),
+    path("api/medicalCares/complete/<int:pk>", complete_medical_care, name="complete_medical_care"),
+
+    path("api/prescriptions/add/<int:condition_pk>", issue_prescription, name="issue_prescription"),
+    path("api/prescriptions", view_prescriptions, name="view_prescriptions"),
+    path("api/prescriptions/update/<int:prescription_pk>", update_prescription_status, name="update_prescription_status"),
     
-    path("api/tester", tester, name="tester"),
+    path("api/tester", tester, name="tester")
+
 
 
 
@@ -21,5 +30,6 @@ urlpatterns = [
     path('api/radio-test/<int:pk>/', GetRadioTestById.as_view(), name='get_radio_test_by_id'),
     path('api/testhistory/<int:medical_condition_id>/', TestHistory.as_view(), name='testhistory'),
     path('api/testhistory/get-test/', GetTestByIdAndType.as_view(), name='get_test_by_query'),
+
 
 ]
