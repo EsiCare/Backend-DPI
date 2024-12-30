@@ -26,6 +26,7 @@ from django.db.models import Count
 from django.db.models.functions import TruncDate
 from datetime import datetime, timedelta
 from django.db.models import Q
+from dpiOps.models import *
 
 
 
@@ -147,7 +148,7 @@ class RegisterPatientView(APIView):
                 password=hashed_password
             )
 
-            dpi = Dpi.objects.create(patient=patient)
+            dpi = MedicalCondition.objects.create(patient=patient)
 
             # Send email
             try:

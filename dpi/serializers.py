@@ -4,10 +4,7 @@ from .models import Patient,Doctor, Nurse, Radiologist, Administrative, Actor,Ho
 class PatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
-        fields = [
-            'id', 'name', 'email', 'phoneNumber', 'gender', 
-            'dateOfBirth', 'emergencyContactName', 'emergencyContactPhone','SSN','dateAdded',
-        ]
+        fields = "__all__"
 
 
 

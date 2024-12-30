@@ -1,4 +1,5 @@
 
+
 from rest_framework import serializers
 from dpiOps.models import *
 from dpi.models import *
@@ -33,3 +34,17 @@ class PrescriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prescription
         fields = "__all__"
+
+
+
+class BaioTestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Baio_test
+        fields = "__all__"
+
+
+class RadioTestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Radio_test
+        fields = "__all__"
+

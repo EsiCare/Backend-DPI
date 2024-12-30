@@ -1,3 +1,4 @@
+
 from django.urls import path
 from .views import *
 
@@ -16,4 +17,19 @@ urlpatterns = [
     path("api/prescriptions/update/<int:prescription_pk>", update_prescription_status, name="update_prescription_status"),
     
     path("api/tester", tester, name="tester")
+
+
+
+
+    path('api/request-test/', RequestTest.as_view(), name='request-test'),
+    path('api/baio_test/<int:pk>/', BaioTest.as_view(), name='edit-baio-test'),
+    path('api/radio_test/<int:pk>/', RadioTest.as_view(), name='edit-radio-test'),
+    path('api/baio-tests/<int:pk>/', GetAllBaioTests.as_view(), name='get_all_baio_tests'),
+    path('api/radio-tests/<int:pk>/', GetAllRadioTests.as_view(), name='get_all_radio_tests'),
+    path('api/baio-test/<int:pk>/', GetBaioTestById.as_view(), name='get_baio_test_by_id'),
+    path('api/radio-test/<int:pk>/', GetRadioTestById.as_view(), name='get_radio_test_by_id'),
+    path('api/testhistory/<int:medical_condition_id>/', TestHistory.as_view(), name='testhistory'),
+    path('api/testhistory/get-test/', GetTestByIdAndType.as_view(), name='get_test_by_query'),
+
+
 ]
