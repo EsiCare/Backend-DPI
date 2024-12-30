@@ -37,7 +37,7 @@ def get_medical_history(request,SSN):
         medicalHistory = MedCondSerializer(medicalHistoryQuery, many=True).data
     #get the doctor name that treated the conditions
     for condition in medicalHistory:
-        condition["doctor"] = DoctorSerializer(Doctor.objects.get(pk=condition["doctor"])).data["name"]
+        condition["doctor"] = DoctorSerializer(Doctor.objects.get(pk=condition["doctor"]["id"])).data["name"]
         
 
     return JsonResponse({
@@ -346,13 +346,25 @@ def issue_prescription(request, condition_pk):
         }, status=500)
 
 @api_view(['GET'])
-def view_prescriptions(request, condition_pk):
+def view_prescriptions(request):
     try:
-        # Retrieve the medical condition
-        medical_condition = MedicalCondition.objects.get(pk=condition_pk)
+        params = request.GET
+        query = {}
+        
+        if "condition_pk" in params:
+            query = MedicalCondition.objects.get(pk=params.get("condition_pk")).prescriptions
+            
+        elif "patient_SSN" in params:
+            query = Patient.objects.get(SSN=params.get("patient_SSN")).prescriptions
+        
+        else:
+            query = Prescription.objects
 
-        # Fetch prescriptions for the medical condition
-        prescriptions = medical_condition.prescriptions.prefetch_related('entries').all()
+        if "status" in params:
+            query = Prescription.objects.filter(status=params.get("status"))
+
+        # Fetch prescriptions 
+        prescriptions = query.prefetch_related('entries').all()
 
         # Serialize the prescriptions
         serializer = PrescriptionSerializer(prescriptions, many=True)
@@ -367,11 +379,59 @@ def view_prescriptions(request, condition_pk):
             "status": "failure",
             "message": "Medical condition not found"
         }, status=404)
+    except Patient.DoesNotExist:
+        return JsonResponse({
+            "status": "failure",
+            "message": "Patient not found"
+        }, status=404)
     except Exception as e:
         return JsonResponse({
             "status": "error",
             "message": f"An unexpected error occurred: {str(e)}"
         }, status=500)
+    
+@api_view(['POST'])
+def update_prescription_status(request, prescription_pk):
+
+    try:
+        #fetch the prescription
+        prescription = Prescription.objects.get(pk=prescription_pk)
+
+        if "status" in request.data:
+            prescription.status = request.data.get("status")
+        else:
+            raise(ValueError("please indicated whether the prescription is Validated or Failed"))
+        
+        prescription.validationDate = date.today()
+
+        #validation
+        prescription.full_clean()
+
+        prescription.save()
+
+        return JsonResponse({
+            "status": "success",
+            "data": PrescriptionSerializer(prescription).data
+        },status=200)
+    
+    except Prescription.DoesNotExist:
+        return JsonResponse({
+            "status": "error",
+            "message": "prescription does not exist"
+        },status =404)
+    except ValueError as e:
+        return JsonResponse({
+            "status": "error",
+            "message": str(e)
+        },status = 400)
+    except Exception as e:
+        return JsonResponse({
+            "status": "error",
+            "message": f"An unexpected error occurred: {str(e)}"
+        },status = 500)
+
+        
+
 
 
 @api_view(['GET'])

@@ -12,7 +12,8 @@ urlpatterns = [
     path("api/medicalCares/complete/<int:pk>", complete_medical_care, name="complete_medical_care"),
 
     path("api/prescriptions/add/<int:condition_pk>", issue_prescription, name="issue_prescription"),
-    path("api/prescriptions/<int:condition_pk>", view_prescriptions, name="view_prescriptions"),
+    path("api/prescriptions", view_prescriptions, name="view_prescriptions"),
+    path("api/prescriptions/update/<int:prescription_pk>", update_prescription_status, name="update_prescription_status"),
     
     path("api/tester", tester, name="tester")
 ]

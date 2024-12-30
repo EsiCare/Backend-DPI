@@ -14,12 +14,19 @@ class   MedicalCondition (models.Model):
         return f"Condition for {self.patient.user.username}"
 
 class Prescription (models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("completed", "Completed"),
+        ("failed", "Failed")
+    ]
+
+
     issueDate = models.DateField(auto_now_add=True)
     validationDate=models.DateField(blank=True, null=True)
-    status=models.CharField(max_length=50, default="Pending")
+    status=models.CharField(max_length=50, default="Pending", choices=STATUS_CHOICES)
     notes=models.CharField(max_length=300, blank=True)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    doctor = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="prescriptions")
+    doctor = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True, related_name="prescriptions")
     medicalCondition = models.ForeignKey(MedicalCondition, on_delete=models.CASCADE, related_name="prescriptions")
     
     def __str__(self):
