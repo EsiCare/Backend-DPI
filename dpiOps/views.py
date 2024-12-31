@@ -261,12 +261,27 @@ class RequestTest(APIView):
                     "test_id": test.id,
                     "test_type": "laborantin",
                 }
-
+            elif role == "nurse":
+                test = Nurse_test.objects.create(
+                    status='pending',  # Corrected the typo here
+                    patient=patient,
+                    description=data.get('description'),
+                    title=data.get('title'),
+                    priorite=data.get('priorite'),
+                    medicalCondition=medicalcondition,
+                )
+                response_data = {
+                    "status": "success",
+                    "message": "Laboratory test created successfully",
+                    "test_id": test.id,
+                    "test_type": "laborantin",
+                }                
             else:
                 return JsonResponse({
                     "status": "failed",
                     "message": "Invalid test type provided. Must be 'radiologist' or 'laborantin'.",
                 }, status=400)
+
 
             # Return a successful response
             return JsonResponse(response_data, status=201)
@@ -397,13 +412,16 @@ class TestHistory(APIView):
     def get(self, request, medical_condition_id):
         baio_tests = Baio_test.objects.filter(medicalCondition_id=medical_condition_id)
         radio_tests = Radio_test.objects.filter(medicalCondition_id=medical_condition_id)
+        nurse_tests = Nurse_test.objects.filter(medicalCondition_id=medical_condition_id)
         baio_tests_data = BaioTestSerializer(baio_tests, many=True).data
         radio_tests_data = RadioTestSerializer(radio_tests, many=True).data
+        nurse_tests = NurseTestSerializer(nurse_tests, many=True).data
 
         # Combine both test types
         combined_data = {
             "baio_tests": baio_tests_data,
-            "radio_tests": radio_tests_data
+            "radio_tests": radio_tests_data,
+            "nurse_tests": nurse_tests,
         }
 
         if not combined_data["baio_tests"] and not combined_data["radio_tests"]:

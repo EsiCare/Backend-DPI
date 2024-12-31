@@ -72,3 +72,9 @@ class Radio_test(Test):
     #radiologist=models.ForeignKey(Radiologist, on_delete=models.CASCADE)
     results = models.JSONField(null=True, blank=True)  
    
+
+# Bloodwork model (if still needed)
+class Nurse_test(Test):
+    medicalCondition = models.ForeignKey(MedicalCondition, on_delete=models.CASCADE, related_name="nurseTests")
+    results =  models.JSONField(default=str)
+    #laborantin=models.ForeignKey(Laborantin, on_delete=models.CASCADE)
