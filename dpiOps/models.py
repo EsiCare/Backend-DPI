@@ -69,6 +69,13 @@ class Baio_test(Test):
 # Scan model (if still needed)
 class Radio_test(Test):
     medicalCondition = models.ForeignKey(MedicalCondition, on_delete=models.CASCADE, related_name="tests")
+    imgs =  models.JSONField(default={})
     #radiologist=models.ForeignKey(Radiologist, on_delete=models.CASCADE)
     results = models.JSONField(null=True, blank=True)  
    
+
+# Bloodwork model (if still needed)
+class Nurse_test(Test):
+    medicalCondition = models.ForeignKey(MedicalCondition, on_delete=models.CASCADE, related_name="nurseTests")
+    results =  models.JSONField(default=str)
+    #laborantin=models.ForeignKey(Laborantin, on_delete=models.CASCADE)
