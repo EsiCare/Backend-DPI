@@ -102,6 +102,7 @@ def edit_medical_condition_page(request, pk):
     if auth_response:
         return auth_response
     
+
     try:
         # Retrieve the MedicalCondition object
         medicalCondition = MedicalCondition.objects.get(pk=pk)
@@ -113,13 +114,16 @@ def edit_medical_condition_page(request, pk):
         if 'reason' in request.data:
             medicalCondition.reason = request.data['reason']
         
+
+
         # Save the object after updating fields
         medicalCondition.save()
+
 
         return JsonResponse({
             "status": "success",
             "message": "Medical condition page updated successfully"
-        }, status=204)
+        }, status=200)
     
     except MedicalCondition.DoesNotExist:
         # Return failure response if object doesn't exist
@@ -356,13 +360,41 @@ class RadioTest(APIView):
 
 
 
+class NurseTest(APIView):
+    def put(self, request, pk):
+        try:
+            nurse_test = Nurse_test.objects.get(pk=pk)
+        except Nurse_test.DoesNotExist:
+            return Response(
+                {"status": "failed", "message": "Nurse_test not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        nurse_test.status = 'completed'
+        nurse_test.conductionDate=date.today()
+        serializer = NurseTestSerializer(nurse_test, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()  
+            return Response({
+                "status": "success",
+                "message": "Nurse_test updated and status set to 'completed'",
+                "data": serializer.data
+            })
+        else:
+            return Response({
+                "status": "failed",
+                "message": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
 class GetAllBaioTests(APIView):
-    def get(self, request,pk):
-        baio_tests = Baio_test.objects.filter(patient_id=pk)
+    def get(self, request):
+        baio_tests = Baio_test.objects.all()
         baio_tests_data = BaioTestSerializer(baio_tests, many=True).data
+        patiens = [test.patient for test in baio_tests]
         return Response({
             "status": "success",
-            "data": baio_tests_data
+            "data": baio_tests_data,
+            "patients": PatientSerializer(patiens,many=True).data,
         })
     
 
@@ -381,14 +413,32 @@ class GetBaioTestById(APIView):
 
 
 class GetAllRadioTests(APIView):
-    def get(self, request,pk):
-        radio_tests = Radio_test.objects.filter(patient_id=pk)
+    def get(self, request):
+        radio_tests = Radio_test.objects.all()
         radio_tests_data = RadioTestSerializer(radio_tests, many=True).data
+        patiens = [test.patient for test in radio_tests]
+
         return Response({
             "status": "success",
-            "data": radio_tests_data
+            "data": radio_tests_data,
+            "patients": PatientSerializer(patiens,many=True).data,
         })
     
+
+class GetAllNurseTests(APIView):
+    def get(self, request):
+        nurse_tests = Nurse_test.objects.all()
+        patiens = [test.patient for test in nurse_tests]
+
+        nurse_tests_data = NurseTestSerializer(nurse_tests, many=True).data
+        
+        return Response({
+            "status": "success",
+            "data": nurse_tests_data,
+            "patients": PatientSerializer(patiens,many=True).data,
+        })
+    
+
 
 
 class GetRadioTestById(APIView):
