@@ -400,6 +400,7 @@ class LoginView(APIView):
                 "gender": actor.gender,
                 "name": actor.name,
                 "phoneNumber": actor.phoneNumber,
+                "hospital": actor.hospital,
                 "SSN": actor.SSN,
                 "dateAdded": actor.dateAdded,
                 "email": actor.email,
