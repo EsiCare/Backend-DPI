@@ -1,4 +1,3 @@
-
 from django.db import models
 from dpi.models import *
 # Create your models here.
@@ -56,28 +55,6 @@ class Care (models.Model):
         return f"Medical Care for {self.patient.user.username}"
 
 
-# Test model (now with type differentiation)
-class Test(models.Model):
-    TEST_STATUS = (
-        ('pending', 'Pending'),
-        ('completed', 'Completed')
-    )
-    issueDate = models.DateField(auto_now_add=True)
-    conductionDate = models.DateField(blank=True)
-    status = models.CharField(max_length=10, choices = TEST_STATUS)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    def __str__(self):
-        return f"{self.get_type_display()} test for {self.patient.user.username}"
-    
-    class Meta:
-        ordering = ['-issueDate']
-        abstract = True  # This makes it an abstract model
-
-
-
-
-=======
-
 
 
 
@@ -118,6 +95,11 @@ class Baio_test(Test):
 # Scan model (if still needed)
 class Radio_test(Test):
     medicalCondition = models.ForeignKey(MedicalCondition, on_delete=models.CASCADE, related_name="tests")
+    imgs =  models.JSONField(default={})
     #radiologist=models.ForeignKey(Radiologist, on_delete=models.CASCADE)
     results = models.JSONField(null=True, blank=True)  
-
+    
+# Bloodwork model (if still needed)
+class Nurse_test(Test):
+    medicalCondition = models.ForeignKey(MedicalCondition, on_delete=models.CASCADE, related_name="nurseTests")
+    results =  models.JSONField(default=str)

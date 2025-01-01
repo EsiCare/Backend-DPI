@@ -1,5 +1,3 @@
-
-
 from rest_framework import serializers
 from dpiOps.models import *
 from dpi.models import *
@@ -27,15 +25,12 @@ class PresEntrySerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 class PrescriptionSerializer(serializers.ModelSerializer):
-
     entries = PresEntrySerializer(many = True)
     doctor = DoctorSerializer()
     patient = PatientSerializer()
     class Meta:
         model = Prescription
         fields = "__all__"
-
-
 
 class BaioTestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -46,5 +41,8 @@ class BaioTestSerializer(serializers.ModelSerializer):
 class RadioTestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Radio_test
+   
+class NurseTestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Nurse_test
         fields = "__all__"
-

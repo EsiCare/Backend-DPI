@@ -19,7 +19,7 @@ roles = ['doctor', 'nurse', 'radiologist', 'administrative', 'laborantin']
 
 def create_worker():
     hospital = choice(hospitals)
-    role = choice(roles)
+    role = "radiologist"
     data = {
         'name': fake.name(),
         'email': f'{fake.user_name()}@example.com',  # Valid email format
@@ -90,4 +90,4 @@ def create_admin():
 # create_admin()
 # create_admin()
 # 
-#create_worker()
+create_worker()

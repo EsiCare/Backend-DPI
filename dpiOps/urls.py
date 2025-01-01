@@ -1,4 +1,3 @@
-
 from django.urls import path
 from .views import *
 
@@ -30,6 +29,3 @@ urlpatterns = [
     path('api/radio-test/<int:pk>/', GetRadioTestById.as_view(), name='get_radio_test_by_id'),
     path('api/testhistory/<int:medical_condition_id>/', TestHistory.as_view(), name='testhistory'),
     path('api/testhistory/get-test/', GetTestByIdAndType.as_view(), name='get_test_by_query'),
-
-
-]
