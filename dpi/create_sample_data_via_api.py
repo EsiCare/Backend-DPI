@@ -10,16 +10,16 @@ PATIENT_API_URL = "http://localhost:8000/api/register/patient/"  # Update with y
 
 # Create hospitals first (ensure these are in the database)
 hospitals = [
+    {'id': 5, 'name': "Sunnydale Clinic"},
     {'id': 1, 'name': "City Hospital"},
     {'id': 4, 'name': "Greenwood Medical Center"},
-    {'id': 5, 'name': "Sunnydale Clinic"}
 ]
 
 roles = ['doctor', 'nurse', 'radiologist', 'administrative', 'laborantin']
 
 def create_worker():
     hospital = choice(hospitals)
-    role = "admin"
+    role = "doctor"
     data = {
         'name': fake.name(),
         'email': f'{fake.user_name()}@example.com',  # Valid email format
@@ -50,7 +50,7 @@ def create_patient():
         'address': fake.address(),
         'age': randint(20, 80),
         'logged_at': fake.date_this_decade(),
-        'hospital': hospital['name'] , # Send the hospital name
+        'hospital': "Sunnydale Clinic", # Send the hospital name
         'phoneNumber': fake.phone_number()[:10],
         'Gender':'male'
     }
@@ -58,7 +58,7 @@ def create_patient():
     response = requests.post(PATIENT_API_URL, data=data)
 
     if response.status_code == 201:
-        print(f"Patient {data['name']} added successfully to {hospital['name']}")
+        print(f"Patient {data['name']} added successfully to {data}")
     else:
         print(f"Failed to add patient: {response.json()['message']}")
 
@@ -85,9 +85,9 @@ def create_admin():
 # Create workers and patients
 # for _ in range(5):  # Create 5 workers and 5 patients for each hospital
 #     create_worker()
-#     create_patient()
+create_patient()
 
-create_admin()
+# create_admin()
 # create_admin()
 # 
 # create_worker()

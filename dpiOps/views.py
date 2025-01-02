@@ -34,7 +34,9 @@ def get_medical_history(request,SSN):
         },
         status=404
         )
-    medicalHistoryQuery = MedicalCondition.objects.select_related("doctor").filter(patient=patient)
+    
+
+    medicalHistoryQuery = MedicalCondition.objects.filter(patient=patient).select_related("doctor")
 
     #check if the results aren't empty
     medicalHistory = {}
@@ -42,8 +44,10 @@ def get_medical_history(request,SSN):
         medicalHistory = MedCondSerializer(medicalHistoryQuery, many=True).data
     #get the doctor name that treated the conditions
     for condition in medicalHistory:
-        condition["doctor"] = DoctorSerializer(Doctor.objects.get(pk=condition["doctor"])).data["name"]
-        
+        try:
+            condition["doctor"] = DoctorSerializer(Doctor.objects.get(pk=condition["doctor"])).data["name"]
+        except:
+            pass
 
     return JsonResponse({
         "status": "success",
@@ -467,6 +471,7 @@ class TestHistory(APIView):
         radio_tests_data = RadioTestSerializer(radio_tests, many=True).data
         nurse_tests = NurseTestSerializer(nurse_tests, many=True).data
 
+
         # Combine both test types
         combined_data = {
             "baio_tests": baio_tests_data,
@@ -474,11 +479,15 @@ class TestHistory(APIView):
             "nurse_tests": nurse_tests,
         }
 
-        if not combined_data["baio_tests"] and not combined_data["radio_tests"]:
-            return Response({
-                "status": "failed",
-                "message": "No tests found for this medical condition"
-            }, status=404)
+
+
+        # if not combined_data["baio_tests"] and not combined_data["radio_tests"] and not combined_data["nurse_tests"]:
+        #     return Response({
+        #         "status": "failed",
+        #         "message": "No tests found for this medical condition"
+        #     }, status=404)
+
+
 
         return Response({
             "status": "success",

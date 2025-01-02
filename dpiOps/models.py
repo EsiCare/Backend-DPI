@@ -10,7 +10,7 @@ class   MedicalCondition (models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
     doctor = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True)
     def __str__(self):
-        return f"Condition for {self.patient.user.username}"
+        return f"Condition for {self.patient}"
 
 class Prescription (models.Model):
     STATUS_CHOICES = [
