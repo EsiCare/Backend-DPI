@@ -11,6 +11,11 @@ urlpatterns = [
     path("api/tester", tester, name="tester"),
 
 
+    path("api/prescriptions/add/<int:condition_pk>", issue_prescription, name="issue_prescription"),
+    path("api/prescriptions", view_prescriptions, name="view_prescriptions"),
+    path("api/prescriptions/update/<int:prescription_pk>", update_prescription_status, name="update_prescription_status"),
+
+
 
     path('api/request-test/', RequestTest.as_view(), name='request-test'),
     path('api/baio_test/<int:pk>/', BaioTest.as_view(), name='edit-baio-test'),

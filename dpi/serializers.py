@@ -1,10 +1,7 @@
 from rest_framework import serializers
 from .models import Patient,Doctor, Nurse, Radiologist, Administrative, Actor,Hospital
+from .serializers import *
 
-class PatientSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Patient
-        fields = "__all__"
 
 
 
@@ -51,3 +48,10 @@ class HospitalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hospital
         fields = ['id', 'name']  # Adjust the fields based on your model
+
+
+class PatientSerializer(serializers.ModelSerializer):
+    hospital = HospitalSerializer()
+    class Meta:
+        model = Patient
+        fields = "__all__"

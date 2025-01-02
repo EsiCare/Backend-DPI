@@ -101,7 +101,10 @@ class RegisterPatientView(APIView):
             email = data.get('email')
 
             if UserCredentials.objects.filter(email=email).exists():
+                print(data)
                 return Response({'status': 'error', 'message': 'Email already in use'}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
             # Validate email format
             validator = EmailValidator()
@@ -130,10 +133,11 @@ class RegisterPatientView(APIView):
                 phoneNumber=data.get('phoneNumber'),
                 SSN=data.get('SSN'),
                 dateOfBirth=data.get('dateOfBirth'),
-                gender=data.get('Gender'),
+                gender=data.get('gender'),
                 emergencyContactName=data.get('emergencyContactName'),
                 emergencyContactPhone=data.get('emergencyContactPhone'),
-                email=email
+                email=email,
+                pastMedical=data.get('emergencyContactName'),
             )
 
 
@@ -332,6 +336,8 @@ class LoginView(APIView):
             actor = user_credentials.actor
             if isinstance(actor, Patient):
                 role = 'patient'
+            if isinstance(actor, Nurse):
+                role = 'nurse'
             elif isinstance(actor, Doctor):
                 role = 'doctor'
             elif isinstance(actor, Administrative):
@@ -475,6 +481,7 @@ class SearchPatient_by_SSN (APIView):
 
 class Edit_patient_info (APIView):
     def put(self, request, pk):
+        print("UIR MOMO")
         try:
             patient = Patient.objects.get(pk=pk)
         except Patient.DoesNotExist:
@@ -486,7 +493,7 @@ class Edit_patient_info (APIView):
             serializer.save()
             return Response({'status': 'success', 'message': 'Patient information updated successfully', 'data': serializer.data}, status=status.HTTP_200_OK)
         else:
-            return Response({'status': 'error', 'message': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'status': 'error', 'message': serializer.errors[list(serializer.errors.keys())[0]]}, status=status.HTTP_400_BAD_REQUEST)
         
 
 

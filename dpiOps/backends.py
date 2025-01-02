@@ -23,6 +23,7 @@ def authenticate(request):
     Decodes the JWT token from the Authorization header and appends user info to request.
     """
     auth_header = request.headers.get('Authorization', None)
+
     role_model_dict = {
         "radiologist": Radiologist,
         "patient": Patient,

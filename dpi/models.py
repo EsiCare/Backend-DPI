@@ -56,6 +56,7 @@ class Patient(Actor):
     emergencyContactName = models.CharField(max_length=50, null=True)
     emergencyContactPhone= models.CharField(max_length=10, null=True)
     updated = models.DateTimeField(auto_now=True)
+    pastMedical= models.TextField(null=True,default="")
     hospital = models.ForeignKey(
         Hospital,
         related_name='patients',  # Unique related_name

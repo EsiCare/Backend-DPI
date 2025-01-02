@@ -13,14 +13,23 @@ class   MedicalCondition (models.Model):
         return f"Condition for {self.patient.user.username}"
 
 class Prescription (models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("completed", "Completed"),
+        ("failed", "Failed")
+    ]
+
+
     issueDate = models.DateField(auto_now_add=True)
-    validationDate=models.DateField(blank=True)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    validationDate=models.DateField(blank=True, null=True)
+    status=models.CharField(max_length=50, default="Pending", choices=STATUS_CHOICES)
+    notes=models.CharField(max_length=300, blank=True)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="prescriptions")
+    doctor = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True, related_name="prescriptions")
     medicalCondition = models.ForeignKey(MedicalCondition, on_delete=models.CASCADE, related_name="prescriptions")
+    
     def __str__(self):
         return f"Prescription for {self.patient.user.username}"
-
-
 class Care (models.Model):
     observation = models.CharField(max_length=500, blank=True)
     care = models.CharField(max_length=500, blank=True)
@@ -79,3 +88,13 @@ class Nurse_test(Test):
     medicalCondition = models.ForeignKey(MedicalCondition, on_delete=models.CASCADE, related_name="nurseTests")
     results =  models.JSONField(default=str)
     #laborantin=models.ForeignKey(Laborantin, on_delete=models.CASCADE)
+
+
+
+class PrescriptionEntry(models.Model):
+    name = models.CharField(max_length=50, blank=True) 
+    dosage = models.CharField(max_length=50, blank=True)
+    frequency = models.CharField(max_length=50, blank=True)
+    duration = models.CharField(max_length=50, blank=True)
+    instructions = models.CharField(max_length=100, blank=True)
+    prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE, related_name="entries")
