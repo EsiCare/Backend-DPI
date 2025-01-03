@@ -548,6 +548,11 @@ class GetAllWorkersView(APIView):
             AdministrativeSerializer,
             request
         )
+        labo_data = self.get_paginated_response(
+            Laborantin.objects.filter(hospital=hospital),
+            LaborantinSerializer,
+            request
+        )        
 
         # Combine the paginated data into one response
         combined_data = {
@@ -555,6 +560,7 @@ class GetAllWorkersView(APIView):
             'nurses': nurse_data.data,
             'radiologists': radiologist_data.data,
             'administrative': administrative_data.data,
+            'labo': labo_data.data,
         }
 
         return Response({

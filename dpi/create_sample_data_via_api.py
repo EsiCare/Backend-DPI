@@ -15,11 +15,11 @@ hospitals = [
     {'id': 4, 'name': "Greenwood Medical Center"},
 ]
 
-roles = ['doctor', 'nurse', 'radiologist', 'administrative', 'laborantin']
+roles = ['doctor', 'nurse', 'radiologist', 'admin','administrative', 'laborantin']
 
 def create_worker():
     hospital = choice(hospitals)
-    role = "doctor"
+    role = "administrative"
     data = {
         'name': fake.name(),
         'email': f'{fake.user_name()}@example.com',  # Valid email format
@@ -85,9 +85,9 @@ def create_admin():
 # Create workers and patients
 # for _ in range(5):  # Create 5 workers and 5 patients for each hospital
 #     create_worker()
-create_patient()
+# create_patient()
 
 # create_admin()
 # create_admin()
 # 
-# create_worker()
+create_worker()

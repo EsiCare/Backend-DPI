@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Patient,Doctor, Nurse, Radiologist, Administrative, Actor,Hospital
+from .models import Patient,Doctor, Nurse, Radiologist, Administrative, Actor,Hospital,Laborantin
 from .serializers import *
 
 
@@ -35,10 +35,10 @@ class AdministrativeSerializer(serializers.ModelSerializer):
 
 
 class LaborantinSerializer(serializers.ModelSerializer):
-    role = serializers.CharField(default='administrative', read_only=True)  
+    role = serializers.CharField(default='laborantin', read_only=True)  
     
     class Meta:
-        model = Administrative
+        model = Laborantin
         fields = ['id', 'name','email', 'phoneNumber', 'SSN', 'dateAdded', 'role']
 
 
